@@ -1,0 +1,107 @@
+---
+title: "Coursera Statistical Inference Project 2"
+author: "Lisa Yuan"
+date: "January 28, 2016"
+output: pdf_document
+---
+##Overview
+
+In this analysis I explored ToothGrowth dataset about "the Effect of Vatamin C on Tooth Growth in Guinea Pigs". I used statistical hypothesis tests to compare tooth length by delivery types and dose in miligrams. 
+
+The ToothGrowth dataset is in R library datasets. It contains 60 observations on 3 variables. 
+
+
+1. 	 len: Length of odontoblasts 
+2.   supp:	 Supplement type (VC or OJ)
+3.  dose:	 Dose in milligrams/day
+
+```{r}
+### load datasets and ggplot2 libraries
+library(datasets)
+library(ggplot2)
+
+### load the ToothGrowth dataset
+data("ToothGrowth")
+
+### Review the structure of the data 
+str(ToothGrowth)
+```
+
+```{r}
+### Summary Statistics
+summary(ToothGrowth)
+```
+
+By checking at the variable structure, I see the supp is a factor variable with 2 levels.  About half of the observations wiht value "OC" and the other half "VC".  The numerical vaiable length range between 4.2 to 33.90, with the mean of 18.81 and median of 19.25.  The does varaible is a numeric with the range between 0.5 to 2 with median of 1 and mean of 1.167.  After further examing the data, I found actually, there are only 3 does values 0.5, 1.0 and 2.0  It should be treated like a factor variable rather than numeric variable. 
+
+```{r}
+unique(ToothGrowth$dose)
+```
+
+I created a bar plot trying to explore relationships between length, suppliment and dose variables. 
+
+```{r, echo = FALSE}
+ggplot(ToothGrowth, aes(x=factor(dose), y=len, fill=supp)) + geom_bar(stat="identity", position=position_dodge()) + labs(title = "Guinea pig tooth length by dosage for each suppliment type", x="Dose (mg/day)", y="Tooth Length")
+```
+
+From the above barplot, it seems to me that the dosage amount is positively correlated with tooth length.  The suppliment also has different impact on the tooth length, orange juice appears to be more effective than ascorbic acid for tooth growth.  However, as the dosage increases to 2 mg, the impact is not obvious. 
+
+## Confidence Interval and and Hypothesis test 
+
+### Hypothesis 1
+
+Different suppliments deliver the same tooth growth 
+
+```{r}
+hy1 <- t.test(len ~ supp, data=ToothGrowth)
+hy1$conf.int
+hy1$p.value
+```
+
+As the test result tells us that with the confidence interval of (-0.1710, 7.5710) and the P value of 0.0606, which is greater than 0.05,  we failed to reject the null hypothesis. 
+
+### Hypothesis 2 
+
+Different doseage delivers the same tooth growth
+
+```{r}
+# subset data by dose to create three groups for pairwise t test
+dose1 <- subset(ToothGrowth, dose %in% c(0.5, 1.0))
+dose2 <- subset(ToothGrowth, dose %in% c(1.0, 2.0))
+dose3 <- subset(ToothGrowth, dose %in% c(0.5, 2.0))
+t.test(len~dose, dose1, paired = F, var.equal=F)
+t.test(len~dose, dose2, paired=F, var.equal=F)
+t.test(len~dose, dose3, paired=F, var.equal=F)
+```
+
+By examing the testing results, the P values for three tests are much lower than 0.05 and the confidence intervals ([-11.98, -6.27] for dose 0.5 and 1, [-8.996, -3.733] for dose 1 and 2, [-18.16, -12.83] for dose 0.5 and 2 are all in the negative area, which allows us to reject the null hypothesis that giving differnt doseages has not impact on tooth growth.  The confidence intervals, P values and t statistics give evidence of strong positive correlation between dosage and tooth growth. 
+
+### Hypothesis 3
+
+Using different suppliment makes no difference at the same dose level
+
+```{r}
+dose5 <- subset(ToothGrowth, dose == 0.5)
+dose10 <- subset(ToothGrowth, dose == 1.0)
+dose20 <- subset(ToothGrowth, dose == 2.0)
+t.test(len~supp, dose5, paired=F, val.equal=F)
+t.test(len~supp, dose10, paired=F, val.equal=F)
+t.test(len~supp, dose20, paired=F, val.equal=F)
+```
+
+The test results support that When given 0.5mg per day, using different suppliment makes big diffence in tooth growth. With the confidence interval of [1.72, 8.78] and p-value much smaller than 0.05, we can reject the null hypothesis. 
+
+When given 1.0mg per day, using different suppliment makes different in tooth growth. With the confidence interval of [2.80, 9.06] and p-value much smaller than 0.05, we can reject the null hypothesis. 
+
+When given 2.0mg per day, the test confidence interval is [-3.798, 3.638] and the p-value is 0.96, which is large than 0.05. With this test result, we failed to reject the null hypothsis.  The evidence given by the test results tells us that when given 2.0mg per day, using different suppliment does not make difference. 
+
+### Assumptions and Conclusion
+
+In order to draw the conclusion from the test we performed, we must assume: 
+1. The observations are independent. In this case, it means that the guinea pigs need to be used so each combination of dose level and delivery method were not affected by the other methods. 
+2. The dependent variable (Tooth Growth) has a normal distribution. 
+
+Under the preceding assumptions, we can infer that given guinea pigs different dosages will have different impact on their tooth growth no matter what delivery method is used.  We are unable to infer that using different method will make difference in tooth growth in general.  However, We can infer that when given smaller amount of dose (0.5mg, 1.0mg), the orange juice is more effective.  When given 2.0mg, there is no sufficient evidence to suggest that one delivery method is more effective over the other. 
+
+
+  
